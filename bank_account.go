@@ -11,9 +11,7 @@ Some implementation notes:
 
 I'm surrounding any read or write to an account object instance
 with a mutex lock/unlock.
-In some circumstances, I'm required to return an in instance
-variable, which cannot be inside the lock/unlock. In that
-case, I'm assigning temporary variables (specifically for the return)
+
 */
 package account
 
@@ -26,7 +24,14 @@ Protected reads and writes are needed to prevent:
 -incorrect balance.
 -operations on a closed account
 */
-type Account struct {
+
+type Account interface {
+	Deposit(amount int64) (newBalance int64, ok bool)
+	Close() (payout int64, ok bool)
+	Balance() (balance int64, ok bool)
+}
+
+type bankAccount struct {
 	sync.RWMutex
 	balance int64
 	IsOpen  bool
@@ -37,15 +42,13 @@ Open an account and make an initial deposit.
 Prevent the account from opening if an attempt
 is made to deposit a negative amount.
 */
-func Open(initialDeposit int64) *Account {
+func Open(initialDeposit int64) Account {
 	if initialDeposit < 0 {
 		return nil
 	} else {
-		i := new(Account)
-		i.Lock()
+		i := new(bankAccount)
 		i.balance = initialDeposit
 		i.IsOpen = true
-		i.Unlock()
 		return i
 	}
 }
@@ -53,16 +56,15 @@ func Open(initialDeposit int64) *Account {
 /*
 Close the account, return any balance, and prevent any future operations
 */
-func (i *Account) Close() (payout int64, ok bool) {
+func (i *bankAccount) Close() (payout int64, ok bool) {
 	i.Lock()
+	defer i.Unlock()
 	if i.IsOpen {
 		x := i.balance
 		i.balance = 0
 		i.IsOpen = false
-		i.Unlock()
 		return x, true
 	} else {
-		i.Unlock()
 		return 0, false
 	}
 }
@@ -70,15 +72,12 @@ func (i *Account) Close() (payout int64, ok bool) {
 /*
 Report the account balance
 */
-func (i *Account) Balance() (balance int64, ok bool) {
+func (i *bankAccount) Balance() (balance int64, ok bool) {
 	i.Lock()
+	defer i.Unlock()
 	if i.IsOpen {
-		x := i.balance
-		y := i.IsOpen
-		i.Unlock()
-		return x, y
+		return i.balance, i.IsOpen
 	} else {
-		i.Unlock()
 		return 0, false
 	}
 }
@@ -86,16 +85,15 @@ func (i *Account) Balance() (balance int64, ok bool) {
 /*
 Make a deposit (or withdrawal). Negative balance transaction is prevented.
 */
-func (i *Account) Deposit(amount int64) (newBalance int64, ok bool) {
+func (i *bankAccount) Deposit(amount int64) (newBalance int64, ok bool) {
 	i.Lock()
+	defer i.Unlock()
 	x := i.balance
 	if i.balance+amount < 0 || i.IsOpen == false {
-		i.Unlock()
-		return x, false
+		return i.balance, false
 	} else {
 		x += amount
 		i.balance = x
-		i.Unlock()
 		return x, true
 	}
 }
