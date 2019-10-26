@@ -1,8 +1,3 @@
-Some of the design decisions in this package are required by
-the authors of this test problem. The bank_account_test file
-was written entirely by exercism (exercism.io) unaltered by myself
-The bank_account.go file is entirely my work.
-
 # Bank Account
 
 Simulate a bank account supporting opening/closing, withdrawals, and deposits
