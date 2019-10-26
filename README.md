@@ -1,6 +1,8 @@
+This is an exercism.io programming challenge.
+
 # Bank Account
 
-Simulate a bank account supporting opening/closing, withdrawals, and deposits
+Simulates a bank account supporting opening/closing, withdrawals, and deposits
 of money. Watch out for concurrent transactions!
 
 A bank account can be accessed in multiple ways. Clients can make
